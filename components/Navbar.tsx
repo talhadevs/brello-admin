@@ -38,10 +38,10 @@ const Navbar = () => {
             </a>
           ))}
           <a
-            href="#cta"
+            href="/admin"
             className="bg-gradient-cool text-primary-foreground px-5 py-2.5 rounded-full text-sm font-semibold hover:opacity-90 transition-opacity"
           >
-            Sign In
+            Admin
           </a>
         </div>
 
