@@ -5,6 +5,7 @@ import { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard, Loader2 } from "lucide-react";
 import { CONTENT_TYPES } from "@/lib/wordpress/content-types";
+import ThemeToggle from "@/components/admin/ThemeToggle";
 
 function NavItemLabel({ label }: { label: string }) {
   const { pending } = useLinkStatus();
@@ -64,6 +65,9 @@ export default function Sidebar() {
           );
         })}
       </nav>
+      <div className="p-4 border-t border-border">
+        <ThemeToggle />
+      </div>
     </aside>
   );
 }

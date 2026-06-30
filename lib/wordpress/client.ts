@@ -6,8 +6,14 @@ function getConfig() {
   const password = process.env.WP_API_PASSWORD;
 
   if (!baseUrl || !username || !password) {
+    const missing = [
+      !baseUrl && "WP_API_URL",
+      !username && "WP_API_USERNAME",
+      !password && "WP_API_PASSWORD",
+    ].filter(Boolean);
+
     throw new Error(
-      "WordPress API credentials missing. Set WP_API_URL, WP_API_USERNAME, and WP_API_PASSWORD in .env.local",
+      `WordPress API credentials missing: ${missing.join(", ")}. Add them to .env.local (use quotes if password contains # or %).`,
     );
   }
 
