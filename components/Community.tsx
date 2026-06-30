@@ -21,7 +21,7 @@ const Community = () => {
             You&apos;re Not Alone on This Journey
           </h2>
           <p className="text-muted-foreground text-lg leading-relaxed mb-8">
-            Connect with Village Rithm, share experiences, and find
+            Connect with Brello, share experiences, and find
             encouragement in a safe, supportive space.
           </p>
           <a

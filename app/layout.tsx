@@ -2,9 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Village Rithm – AI-Powered Family Growth Platform",
-  description:
-    "A personalized, AI-powered growth platform for families to co-create meaningful experiences through learning, creativity, fun, and exploration.",
+  title: "Brello Admin",
+  description: "Admin panel for managing the Brello platform.",
 };
 
 export default function RootLayout({

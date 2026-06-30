@@ -6,9 +6,9 @@ import { ChevronDown } from "lucide-react";
 
 const faqs = [
   {
-    question: "Is Village Rithm suitable for all ages?",
+    question: "Is Brello suitable for all ages?",
     answer:
-      "Yes, Village Rithm supports families with children ages 3-17. We personalize recommendations so every activity matches developmental needs.",
+      "Yes, Brello supports families with children ages 3-17. We personalize recommendations so every activity matches developmental needs.",
   },
   {
     question: "How much time do activities typically take?",
@@ -21,17 +21,17 @@ const faqs = [
       "Most activities use common household items. When something extra helps, we share a mini checklist plus budget-friendly alternatives.",
   },
   {
-    question: "What is Village Rithm used for?",
+    question: "What is Brello used for?",
     answer:
-      "Village Rithm is your family's curation studio: set shared goals, build interactive vision boards, discover activities, and grow connections with like-minded parents.",
+      "Brello is your family's curation studio: set shared goals, build interactive vision boards, discover activities, and grow connections with like-minded parents.",
   },
   {
-    question: "Does Village Rithm really help to educate your child?",
+    question: "Does Brello really help to educate your child?",
     answer:
       "Absolutely. Every recommendation blends fun with learning drawing on child development research, SEL frameworks, and creativity prompts.",
   },
   {
-    question: "What is the purpose of Village Rithm?",
+    question: "What is the purpose of Brello?",
     answer:
       "We empower families to craft meaningful experiences together through personalized planning, supportive communities, and engaging rewards.",
   },

@@ -23,7 +23,7 @@ const Navbar = () => {
       <div className="mx-auto max-w-6xl rounded-2xl bg-card/80 backdrop-blur-lg border border-border/50 px-6 py-3 flex items-center justify-between">
         <a href="#" className="flex items-center gap-2">
           <span className="text-2xl font-heading font-bold text-foreground">
-            Village <span className="text-gradient-cool">Rithm</span>
+            Brello <span className="text-gradient-cool">Admin</span>
           </span>
         </a>
 
