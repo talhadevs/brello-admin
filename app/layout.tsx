@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import AdminShell from "@/components/admin/AdminShell";
 import { ThemeProvider } from "@/components/admin/ThemeProvider";
 import "./globals.css";
 
@@ -36,9 +35,7 @@ export default function RootLayout({
         className="min-h-full font-body bg-background text-foreground"
         suppressHydrationWarning
       >
-        <ThemeProvider>
-          <AdminShell>{children}</AdminShell>
-        </ThemeProvider>
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );

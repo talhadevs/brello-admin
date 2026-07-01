@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useLinkStatus } from "next/link";
 import Image from "next/image";
@@ -125,6 +126,38 @@ function NavLink({
   );
 }
 
+function LogoutButton() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+
+  async function handleLogout() {
+    setLoading(true);
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      router.push("/login");
+      router.refresh();
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleLogout}
+      disabled={loading}
+      className="flex items-center gap-2 w-full rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-50"
+    >
+      {loading ? (
+        <Loader2 size={16} className="shrink-0 animate-spin" />
+      ) : (
+        <LogOut size={16} className="shrink-0" />
+      )}
+      Logout
+    </button>
+  );
+}
+
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
@@ -185,54 +218,9 @@ export default function Sidebar() {
         )}
       </nav>
 
-      <div className="p-3 border-t border-border shrink-0">
-        <div className="flex items-center gap-3 rounded-xl p-2">
-          <Link
-            href="/settings"
-            className="flex items-center gap-3 flex-1 min-w-0 rounded-lg p-1 hover:bg-muted transition-colors"
-          >
-            {mounted && user?.avatar ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={user.avatar}
-                alt=""
-                className="h-9 w-9 shrink-0 rounded-full object-cover"
-              />
-            ) : (
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand text-brand-foreground text-xs font-bold">
-                {mounted ? initials : ""}
-              </span>
-            )}
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-semibold text-foreground">
-                {mounted ? displayName : "\u00A0"}
-              </span>
-              <span className="block truncate text-xs text-muted-foreground">
-                {mounted ? user?.role ?? "Not signed in" : "\u00A0"}
-              </span>
-            </span>
-          </Link>
-          <Link
-            href="/settings"
-            className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors ${
-              pathname === "/settings"
-                ? "bg-muted text-brand"
-                : "text-muted-foreground hover:bg-muted hover:text-brand"
-            }`}
-            aria-label="Settings"
-            title="Settings"
-          >
-            <Settings size={16} />
-          </Link>
-          <button
-            onClick={handleLogout}
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-brand transition-colors"
-            aria-label="Log out"
-            title="Log out"
-          >
-            <LogOut size={16} />
-          </button>
-        </div>
+      <div className="p-4 border-t border-border shrink-0 space-y-1">
+        <ThemeToggle />
+        <LogoutButton />
       </div>
     </motion.aside>
   );
