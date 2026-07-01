@@ -14,12 +14,15 @@ import {
   ChevronRight,
   type LucideIcon,
 } from "lucide-react";
+import StripeBanner from "@/components/admin/stripe/StripeBanner";
+import { useStripeList } from "@/components/admin/stripe/useStripeList";
 import {
   ORDERS,
   MEDICATIONS,
   PAYMENT_STYLES,
   FULFILLMENT_STYLES,
   type FulfillmentStatus,
+  type Order,
 } from "@/components/admin/orders/orders-data";
 
 const FULFILLMENT_OPTIONS: (FulfillmentStatus | "All")[] = [
@@ -68,25 +71,30 @@ function StatCard({
 }
 
 export default function OrdersView() {
+  const { items: orders, configured, usingMock } = useStripeList<Order>(
+    "/api/stripe/orders",
+    "orders",
+    ORDERS
+  );
   const [query, setQuery] = useState("");
   const [fulfillment, setFulfillment] = useState<(typeof FULFILLMENT_OPTIONS)[number]>("All");
   const [medication, setMedication] = useState<string>("All");
   const [page, setPage] = useState(1);
 
   const stats = useMemo(() => {
-    const total = ORDERS.length;
-    const pending = ORDERS.filter(
+    const total = orders.length;
+    const pending = orders.filter(
       (o) => o.fulfillment === "Provider Review" || o.fulfillment === "Processing" || o.fulfillment === "On Hold"
     ).length;
-    const shipped = ORDERS.filter(
+    const shipped = orders.filter(
       (o) => o.fulfillment === "Shipped" || o.fulfillment === "Delivered"
     ).length;
-    const revenue = ORDERS.filter((o) => o.payment === "Paid").reduce((s, o) => s + o.amount, 0);
+    const revenue = orders.filter((o) => o.payment === "Paid").reduce((s, o) => s + o.amount, 0);
     return { total, pending, shipped, revenue };
-  }, []);
+  }, [orders]);
 
   const filtered = useMemo(() => {
-    return ORDERS.filter((o) => {
+    return orders.filter((o) => {
       const q = query.trim().toLowerCase();
       const matchesQuery =
         !q ||
@@ -97,7 +105,7 @@ export default function OrdersView() {
       const matchesMedication = medication === "All" || o.plan === medication;
       return matchesQuery && matchesFulfillment && matchesMedication;
     });
-  }, [query, fulfillment, medication]);
+  }, [orders, query, fulfillment, medication]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -124,6 +132,8 @@ export default function OrdersView() {
           Export
         </button>
       </div>
+
+      <StripeBanner configured={configured} usingMock={usingMock} />
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 mb-6">
         <StatCard index={0} label="Total Orders" value={String(stats.total)} icon={ShoppingCart} tint="bg-brand/10 text-brand" />

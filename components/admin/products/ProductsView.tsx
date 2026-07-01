@@ -17,6 +17,8 @@ import {
   Eye,
   type LucideIcon,
 } from "lucide-react";
+import StripeBanner from "@/components/admin/stripe/StripeBanner";
+import { useStripeList } from "@/components/admin/stripe/useStripeList";
 import {
   PRODUCTS,
   CATEGORY_STYLES,
@@ -140,7 +142,12 @@ function ProductCard({
 }
 
 export default function ProductsView() {
-  const [products, setProducts] = useState<Product[]>(PRODUCTS);
+  const {
+    items: products,
+    setItems: setProducts,
+    configured,
+    usingMock,
+  } = useStripeList<Product>("/api/stripe/products", "products", PRODUCTS);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<(typeof CATEGORY_OPTIONS)[number]>("All");
   const [status, setStatus] = useState<(typeof STATUS_OPTIONS)[number]>("All");
@@ -207,6 +214,8 @@ export default function ProductsView() {
           Add Product
         </button>
       </div>
+
+      <StripeBanner configured={configured} usingMock={usingMock} />
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 mb-6">
         <StatCard index={0} label="Total Products" value={String(stats.total)} icon={Package} tint="bg-brand/10 text-brand" />
