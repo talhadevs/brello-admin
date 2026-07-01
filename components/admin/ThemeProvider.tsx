@@ -18,6 +18,12 @@ type ThemeContextValue = {
 };
 
 const STORAGE_KEY = "brello-admin-theme";
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
+
+function persistTheme(theme: Theme) {
+  localStorage.setItem(STORAGE_KEY, theme);
+  document.cookie = `${STORAGE_KEY}=${theme};path=/;max-age=${COOKIE_MAX_AGE};SameSite=Lax`;
+}
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
@@ -41,6 +47,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY) as Theme | null;
     const initial = stored ?? "system";
+    persistTheme(initial);
     setThemeState(initial);
     setResolvedTheme(applyTheme(initial));
 
@@ -56,7 +63,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const setTheme = useCallback((next: Theme) => {
-    localStorage.setItem(STORAGE_KEY, next);
+    persistTheme(next);
     setThemeState(next);
     setResolvedTheme(applyTheme(next));
   }, []);
