@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Search,
@@ -12,26 +12,11 @@ import {
   CreditCard,
   Eye,
 } from "lucide-react";
+import StripeBanner from "@/components/admin/stripe/StripeBanner";
+import type { AdminSubscription } from "@/lib/stripe/mappers";
 
-type Status =
-  | "Active"
-  | "Paused"
-  | "Cancelled"
-  | "Past Due"
-  | "Pending Approval";
-
-type Subscription = {
-  id: string;
-  member: string;
-  email: string;
-  plan: string;
-  dosage: string;
-  status: Status;
-  amount: string;
-  cycle: string;
-  nextBilling: string;
-  state: string;
-};
+type Status = AdminSubscription["status"];
+type Subscription = AdminSubscription;
 
 const STATUS_STYLES: Record<Status, string> = {
   Active:
@@ -93,10 +78,62 @@ function StatCard({
 }
 
 export default function SubscriptionsClient() {
-  const [subscriptions, setSubscriptions] = useState(INITIAL_SUBSCRIPTIONS);
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>(INITIAL_SUBSCRIPTIONS);
+  const [configured, setConfigured] = useState(false);
+  const [usingMock, setUsingMock] = useState(true);
   const [statusFilter, setStatusFilter] = useState<Status | "All">("All");
   const [query, setQuery] = useState("");
   const [openMenu, setOpenMenu] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const res = await fetch("/api/stripe/subscriptions");
+        const data = await res.json();
+        if (cancelled) return;
+
+        if (res.ok && data.source === "stripe" && Array.isArray(data.subscriptions)) {
+          setSubscriptions(data.subscriptions);
+          setConfigured(true);
+          setUsingMock(false);
+        } else {
+          setConfigured(Boolean(data.configured));
+          setUsingMock(true);
+        }
+      } catch {
+        if (!cancelled) setUsingMock(true);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function runStripeAction(id: string, action: "cancel" | "pause" | "resume") {
+    if (usingMock) {
+      if (action === "cancel") updateStatus(id, "Cancelled");
+      if (action === "pause") updateStatus(id, "Paused");
+      if (action === "resume") updateStatus(id, "Active");
+      return;
+    }
+
+    const res = await fetch("/api/stripe/subscriptions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, action }),
+    });
+    const data = await res.json();
+    if (res.ok && data.subscription) {
+      setSubscriptions((prev) =>
+        prev.map((s) => (s.id === id ? data.subscription : s))
+      );
+    }
+    setOpenMenu(null);
+  }
 
   const stats = useMemo(() => {
     const count = (s: Status) =>
@@ -141,6 +178,8 @@ export default function SubscriptionsClient() {
           Manage active, paused, and cancelled member subscriptions.
         </p>
       </div>
+
+      <StripeBanner configured={configured} usingMock={usingMock} />
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 mb-6">
         <StatCard label="Active" value={String(stats.active)} sub="Currently billing" index={0} />
@@ -254,13 +293,13 @@ export default function SubscriptionsClient() {
                           <div className="absolute right-0 z-20 mt-1 w-48 rounded-xl border border-border bg-card p-1 shadow-lg">
                             <MenuButton icon={Eye} label="View member" onClick={() => setOpenMenu(null)} />
                             {s.status !== "Active" && s.status !== "Cancelled" && (
-                              <MenuButton icon={Play} label="Resume" onClick={() => updateStatus(s.id, "Active")} />
+                              <MenuButton icon={Play} label="Resume" onClick={() => runStripeAction(s.id, "resume")} />
                             )}
                             {s.status === "Active" && (
-                              <MenuButton icon={Pause} label="Pause" onClick={() => updateStatus(s.id, "Paused")} />
+                              <MenuButton icon={Pause} label="Pause" onClick={() => runStripeAction(s.id, "pause")} />
                             )}
                             {s.status === "Past Due" && (
-                              <MenuButton icon={CreditCard} label="Retry payment" onClick={() => updateStatus(s.id, "Active")} />
+                              <MenuButton icon={CreditCard} label="Retry payment" onClick={() => runStripeAction(s.id, "resume")} />
                             )}
                             {s.status === "Pending Approval" && (
                               <MenuButton icon={RefreshCw} label="Approve & activate" onClick={() => updateStatus(s.id, "Active")} />
@@ -270,7 +309,7 @@ export default function SubscriptionsClient() {
                                 icon={XCircle}
                                 label="Cancel"
                                 destructive
-                                onClick={() => updateStatus(s.id, "Cancelled")}
+                                onClick={() => runStripeAction(s.id, "cancel")}
                               />
                             )}
                           </div>
