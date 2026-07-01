@@ -1,9 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useLinkStatus } from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   LayoutDashboard,
@@ -18,6 +19,7 @@ import {
   HeartHandshake,
   Settings,
   Loader2,
+  LogOut,
   type LucideIcon,
 } from "lucide-react";
 import ThemeToggle from "@/components/admin/ThemeToggle";
@@ -123,6 +125,38 @@ function NavLink({
   );
 }
 
+function LogoutButton() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+
+  async function handleLogout() {
+    setLoading(true);
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      router.push("/login");
+      router.refresh();
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleLogout}
+      disabled={loading}
+      className="flex items-center gap-2 w-full rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-50"
+    >
+      {loading ? (
+        <Loader2 size={16} className="shrink-0 animate-spin" />
+      ) : (
+        <LogOut size={16} className="shrink-0" />
+      )}
+      Logout
+    </button>
+  );
+}
+
 export default function Sidebar() {
   const pathname = usePathname();
   let itemIndex = 0;
@@ -160,8 +194,9 @@ export default function Sidebar() {
         )}
       </nav>
 
-      <div className="p-4 border-t border-border shrink-0">
+      <div className="p-4 border-t border-border shrink-0 space-y-1">
         <ThemeToggle />
+        <LogoutButton />
       </div>
     </motion.aside>
   );
