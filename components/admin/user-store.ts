@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 
+export type UserRole = "Owner" | "Editor" | "Manager";
+
 export type User = {
   name: string;
   email: string;
-  role: string;
+  role: UserRole | string;
   phone: string;
   avatar?: string;
 };
@@ -16,7 +18,7 @@ const EVENT = "brello-user-change";
 const DEFAULT_USER: User = {
   name: "Admin User",
   email: "admin@brellohealth.com",
-  role: "Administrator",
+  role: "Owner",
   phone: "",
   avatar: "",
 };

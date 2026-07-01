@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Moon, Sun, ShieldCheck } from "lucide-react";
 import { useTheme } from "@/components/admin/ThemeProvider";
+import { loginUser } from "@/components/admin/user-store";
 
 const ACCENT = {
   light: {
@@ -90,6 +91,7 @@ export default function LoginPage() {
         return;
       }
 
+      loginUser(email.trim());
       router.push("/");
       router.refresh();
     } catch {

@@ -10,7 +10,9 @@ import {
 } from "@/components/admin/user-store";
 import { useTheme, type Theme } from "@/components/admin/ThemeProvider";
 
-const EMPTY: User = { name: "", email: "", role: "Administrator", phone: "", avatar: "" };
+const EMPTY: User = { name: "", email: "", role: "Owner", phone: "", avatar: "" };
+
+const ROLE_OPTIONS = ["Owner", "Editor", "Manager"] as const;
 
 const THEME_OPTIONS: { value: Theme; label: string; icon: typeof Sun }[] = [
   { value: "light", label: "Light", icon: Sun },
@@ -148,12 +150,17 @@ export default function SettingsView() {
           </label>
           <label className="block">
             <span className="mb-1.5 block text-sm font-medium text-foreground">Role</span>
-            <input
+            <select
               value={form.role}
               onChange={(e) => update("role", e.target.value)}
               className="input"
-              placeholder="Administrator"
-            />
+            >
+              {ROLE_OPTIONS.map((role) => (
+                <option key={role} value={role}>
+                  {role}
+                </option>
+              ))}
+            </select>
           </label>
           <label className="block">
             <span className="mb-1.5 block text-sm font-medium text-foreground">Phone</span>
