@@ -8,6 +8,7 @@ import {
   Activity,
   Package,
   Users,
+  Crown,
   Plus,
   Search,
   LayoutGrid,
@@ -172,8 +173,11 @@ export default function ProductsView() {
     const total = products.length;
     const active = products.filter((p) => p.status === "Active").length;
     const bundles = products.filter((p) => p.category === "Bundle").length;
-    const subscribers = products.reduce((s, p) => s + p.subscribers, 0);
-    return { total, active, bundles, subscribers };
+    const bestSeller = products.reduce(
+      (best, p) => (p.subscribers > best.subscribers ? p : best),
+      products[0]
+    );
+    return { total, active, bundles, bestSeller };
   }, [products]);
 
   const filtered = useMemo(() => {
@@ -208,7 +212,7 @@ export default function ProductsView() {
         <StatCard index={0} label="Total Products" value={String(stats.total)} icon={Package} tint="bg-brand/10 text-brand" />
         <StatCard index={1} label="Active" value={String(stats.active)} icon={Pill} tint="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" />
         <StatCard index={2} label="Bundles" value={String(stats.bundles)} icon={Boxes} tint="bg-sky-500/10 text-sky-600 dark:text-sky-400" />
-        <StatCard index={3} label="Total Subscribers" value={stats.subscribers.toLocaleString()} icon={Users} tint="bg-amber-500/10 text-amber-600 dark:text-amber-400" />
+        <StatCard index={3} label="Top Seller this Month" value={stats.bestSeller?.name ?? "—"} icon={Crown} tint="bg-amber-500/10 text-amber-600 dark:text-amber-400" />
       </div>
 
       <div className="flex flex-wrap items-center gap-3 mb-6">

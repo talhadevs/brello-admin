@@ -1,11 +1,5 @@
-import PlaceholderPage from "@/components/admin/PlaceholderPage";
+import SubscriptionsClient from "@/components/admin/subscriptions/SubscriptionsClient";
 
 export default function SubscriptionsPage() {
-  return (
-    <PlaceholderPage
-      title="Subscriptions"
-      description="Active, paused, and cancelled member subscriptions."
-      icon="subscriptions"
-    />
-  );
+  return <SubscriptionsClient />;
 }

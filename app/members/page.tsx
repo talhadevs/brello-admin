@@ -1,11 +1,5 @@
-import PlaceholderPage from "@/components/admin/PlaceholderPage";
+import MembersClient from "@/components/admin/members/MembersClient";
 
 export default function MembersPage() {
-  return (
-    <PlaceholderPage
-      title="Members"
-      description="View member profiles, plans, and progress."
-      icon="members"
-    />
-  );
+  return <MembersClient />;
 }

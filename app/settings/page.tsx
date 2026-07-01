@@ -1,11 +1,5 @@
-import PlaceholderPage from "@/components/admin/PlaceholderPage";
+import SettingsView from "@/components/admin/settings/SettingsView";
 
 export default function SettingsPage() {
-  return (
-    <PlaceholderPage
-      title="Settings"
-      description="General configuration, branding, and preferences."
-      icon="settings"
-    />
-  );
+  return <SettingsView />;
 }

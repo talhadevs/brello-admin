@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useLinkStatus } from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   LayoutDashboard,
@@ -12,15 +12,16 @@ import {
   RefreshCw,
   Tag,
   Users,
-  ClipboardList,
+  Newspaper,
   Stethoscope,
-  FileText,
   HeartHandshake,
+  ShieldCheck,
   Settings,
   Loader2,
+  LogOut,
   type LucideIcon,
 } from "lucide-react";
-import ThemeToggle from "@/components/admin/ThemeToggle";
+import { useUser, logoutUser } from "@/components/admin/user-store";
 
 type NavItem = {
   label: string;
@@ -51,20 +52,21 @@ const NAV_GROUPS: NavGroup[] = [
     title: "Patients",
     items: [
       { label: "Members", href: "/members", icon: Users },
-      { label: "Intake Forms", href: "/intakes", icon: ClipboardList },
+      { label: "Blogs", href: "/blogs", icon: Newspaper },
       { label: "Provider Reviews", href: "/providers", icon: Stethoscope },
     ],
   },
   {
     title: "Content",
     items: [
-      { label: "Pages", href: "/pages", icon: FileText },
       { label: "Human Interactions", href: "/human_interaction", icon: HeartHandshake },
     ],
   },
   {
     title: "System",
-    items: [{ label: "Settings", href: "/settings", icon: Settings }],
+    items: [
+      { label: "Admins", href: "/admins", icon: ShieldCheck },
+    ],
   },
 ];
 
@@ -125,7 +127,22 @@ function NavLink({
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, mounted } = useUser();
   let itemIndex = 0;
+
+  function handleLogout() {
+    logoutUser();
+    router.push("/login");
+  }
+
+  const displayName = user?.name ?? "Guest";
+  const initials = displayName
+    .split(" ")
+    .map((p) => p[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
 
   return (
     <motion.aside
@@ -142,7 +159,15 @@ export default function Sidebar() {
             width={160}
             height={48}
             priority
-            className="h-12 w-auto object-contain"
+            className="h-12 w-auto object-contain dark:hidden"
+          />
+          <Image
+            src="/images/brello-logo-white-v2.png"
+            alt="Brello"
+            width={160}
+            height={48}
+            priority
+            className="h-12 w-auto object-contain hidden dark:block"
           />
         </Link>
       </div>
@@ -160,8 +185,54 @@ export default function Sidebar() {
         )}
       </nav>
 
-      <div className="p-4 border-t border-border shrink-0">
-        <ThemeToggle />
+      <div className="p-3 border-t border-border shrink-0">
+        <div className="flex items-center gap-3 rounded-xl p-2">
+          <Link
+            href="/settings"
+            className="flex items-center gap-3 flex-1 min-w-0 rounded-lg p-1 hover:bg-muted transition-colors"
+          >
+            {mounted && user?.avatar ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={user.avatar}
+                alt=""
+                className="h-9 w-9 shrink-0 rounded-full object-cover"
+              />
+            ) : (
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand text-brand-foreground text-xs font-bold">
+                {mounted ? initials : ""}
+              </span>
+            )}
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-semibold text-foreground">
+                {mounted ? displayName : "\u00A0"}
+              </span>
+              <span className="block truncate text-xs text-muted-foreground">
+                {mounted ? user?.role ?? "Not signed in" : "\u00A0"}
+              </span>
+            </span>
+          </Link>
+          <Link
+            href="/settings"
+            className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors ${
+              pathname === "/settings"
+                ? "bg-muted text-brand"
+                : "text-muted-foreground hover:bg-muted hover:text-brand"
+            }`}
+            aria-label="Settings"
+            title="Settings"
+          >
+            <Settings size={16} />
+          </Link>
+          <button
+            onClick={handleLogout}
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-brand transition-colors"
+            aria-label="Log out"
+            title="Log out"
+          >
+            <LogOut size={16} />
+          </button>
+        </div>
       </div>
     </motion.aside>
   );

@@ -1,11 +1,5 @@
-import PlaceholderPage from "@/components/admin/PlaceholderPage";
+import PlansView from "@/components/admin/plans/PlansView";
 
 export default function PlansPage() {
-  return (
-    <PlaceholderPage
-      title="Plans & Pricing"
-      description="Manage wellness plans, bundles, and billing cycles."
-      icon="plans"
-    />
-  );
+  return <PlansView />;
 }
