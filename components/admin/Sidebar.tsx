@@ -2,10 +2,71 @@
 
 import Link from "next/link";
 import { useLinkStatus } from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Loader2 } from "lucide-react";
-import { CONTENT_TYPES } from "@/lib/wordpress/content-types";
+import { motion } from "framer-motion";
+import {
+  LayoutDashboard,
+  ShoppingCart,
+  Package,
+  RefreshCw,
+  Tag,
+  Users,
+  ClipboardList,
+  Stethoscope,
+  FileText,
+  HeartHandshake,
+  Settings,
+  Loader2,
+  type LucideIcon,
+} from "lucide-react";
 import ThemeToggle from "@/components/admin/ThemeToggle";
+
+type NavItem = {
+  label: string;
+  href: string;
+  icon: LucideIcon;
+};
+
+type NavGroup = {
+  title: string;
+  items: NavItem[];
+};
+
+const NAV_GROUPS: NavGroup[] = [
+  {
+    title: "Overview",
+    items: [{ label: "Dashboard", href: "/", icon: LayoutDashboard }],
+  },
+  {
+    title: "Commerce",
+    items: [
+      { label: "Orders", href: "/orders", icon: ShoppingCart },
+      { label: "Products", href: "/products", icon: Package },
+      { label: "Subscriptions", href: "/subscriptions", icon: RefreshCw },
+      { label: "Plans & Pricing", href: "/plans", icon: Tag },
+    ],
+  },
+  {
+    title: "Patients",
+    items: [
+      { label: "Members", href: "/members", icon: Users },
+      { label: "Intake Forms", href: "/intakes", icon: ClipboardList },
+      { label: "Provider Reviews", href: "/providers", icon: Stethoscope },
+    ],
+  },
+  {
+    title: "Content",
+    items: [
+      { label: "Pages", href: "/pages", icon: FileText },
+      { label: "Human Interactions", href: "/human_interaction", icon: HeartHandshake },
+    ],
+  },
+  {
+    title: "System",
+    items: [{ label: "Settings", href: "/settings", icon: Settings }],
+  },
+];
 
 function NavItemLabel({ label }: { label: string }) {
   const { pending } = useLinkStatus();
@@ -13,61 +74,95 @@ function NavItemLabel({ label }: { label: string }) {
   return (
     <span className="flex items-center gap-2">
       {pending && (
-        <Loader2 size={14} className="animate-spin shrink-0 text-primary" />
+        <Loader2 size={13} className="animate-spin shrink-0" />
       )}
       {label}
     </span>
   );
 }
 
-export default function Sidebar() {
-  const pathname = usePathname();
+function NavLink({
+  item,
+  active,
+  index,
+}: {
+  item: NavItem;
+  active: boolean;
+  index: number;
+}) {
+  const Icon = item.icon;
 
   return (
-    <aside className="w-64 border-r border-border bg-card shrink-0 flex flex-col">
-      <div className="p-6 border-b border-border">
-        <Link
-          href="/"
-          className="text-xl font-heading font-bold text-foreground"
-        >
-          Brello <span className="text-gradient-cool">Admin</span>
-        </Link>
-        <p className="text-xs text-muted-foreground mt-1">Content Management</p>
-      </div>
-      <nav className="p-4 space-y-1 flex-1">
-        <Link
-          href="/"
-          className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${
-            pathname === "/"
-              ? "bg-muted text-foreground font-medium"
-              : "text-muted-foreground hover:bg-muted hover:text-foreground"
-          }`}
-        >
-          <LayoutDashboard size={16} className="shrink-0" />
-          <NavItemLabel label="Dashboard" />
-        </Link>
-        {CONTENT_TYPES.map((type) => {
-          const href = `/${type.slug}`;
-          const isActive = pathname === href;
+    <motion.div
+      initial={{ opacity: 0, x: -8 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.25, delay: index * 0.03 }}
+    >
+      <Link
+        href={item.href}
+        className={`group relative flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-base font-bold transition-all hover:translate-x-0.5 ${
+          active
+            ? "text-brand-foreground"
+            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+        }`}
+      >
+        {active && (
+          <motion.span
+            layoutId="sidebar-active"
+            className="absolute inset-0 rounded-lg"
+            style={{ backgroundColor: "hsl(var(--nav-active))" }}
+            transition={{ type: "spring", stiffness: 500, damping: 40 }}
+          />
+        )}
+        <Icon size={18} className="relative z-10 shrink-0" />
+        <span className="relative z-10 flex-1">
+          <NavItemLabel label={item.label} />
+        </span>
+      </Link>
+    </motion.div>
+  );
+}
 
-          return (
-            <Link
-              key={type.slug}
-              href={href}
-              className={`block rounded-lg px-3 py-2 text-sm transition-colors ${
-                isActive
-                  ? "bg-muted text-foreground font-medium"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
-              }`}
-            >
-              <NavItemLabel label={type.label} />
-            </Link>
-          );
-        })}
+export default function Sidebar() {
+  const pathname = usePathname();
+  let itemIndex = 0;
+
+  return (
+    <motion.aside
+      initial={{ x: -24, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      transition={{ duration: 0.35, ease: "easeOut" }}
+      className="w-64 border-r border-border bg-card shrink-0 flex flex-col h-screen sticky top-0"
+    >
+      <div className="p-6 border-b border-border flex justify-center shrink-0">
+        <Link href="/" className="flex items-center justify-center">
+          <Image
+            src="/images/cropped-brello-logo-2026-removebg-preview.png"
+            alt="Brello"
+            width={160}
+            height={48}
+            priority
+            className="h-12 w-auto object-contain"
+          />
+        </Link>
+      </div>
+
+      <nav className="flex-1 overflow-y-auto p-4 space-y-1">
+        {NAV_GROUPS.map((group) =>
+          group.items.map((item) => (
+            <NavLink
+              key={item.href}
+              item={item}
+              active={pathname === item.href}
+              index={itemIndex++}
+            />
+          ))
+        )}
       </nav>
-      <div className="p-4 border-t border-border">
+
+      <div className="p-4 border-t border-border shrink-0">
         <ThemeToggle />
       </div>
-    </aside>
+    </motion.aside>
   );
 }

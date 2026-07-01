@@ -1,19 +1,23 @@
 export function DashboardSkeleton() {
   return (
-    <div className="p-8 max-w-5xl animate-pulse">
+    <div className="p-6 md:p-8 max-w-7xl mx-auto animate-pulse">
       <div className="h-9 w-48 bg-muted rounded-lg mb-2" />
-      <div className="h-4 w-72 bg-muted rounded mb-8" />
-      <div className="grid sm:grid-cols-2 gap-4">
-        {Array.from({ length: 6 }).map((_, i) => (
+      <div className="h-4 w-80 bg-muted rounded mb-8" />
+      <div className="grid gap-6 lg:grid-cols-3 mb-6">
+        <div className="lg:col-span-2 h-80 rounded-2xl border border-border bg-card" />
+        <div className="h-80 rounded-2xl border border-border bg-card" />
+      </div>
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 mb-6">
+        {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className="rounded-2xl border border-border bg-card p-6 space-y-3"
-          >
-            <div className="h-5 w-32 bg-muted rounded" />
-            <div className="h-4 w-full bg-muted rounded" />
-            <div className="h-4 w-3/4 bg-muted rounded" />
-          </div>
+            className="h-28 rounded-2xl border border-border bg-card"
+          />
         ))}
+      </div>
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="h-72 rounded-2xl border border-border bg-card" />
+        <div className="lg:col-span-2 h-72 rounded-2xl border border-border bg-card" />
       </div>
     </div>
   );
