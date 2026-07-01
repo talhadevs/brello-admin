@@ -11,12 +11,32 @@ import {
   Pencil,
   Star,
   Users,
+  Plus,
+  Trash2,
   type LucideIcon,
 } from "lucide-react";
+import { useAdminCrud } from "@/components/admin/crud/useAdminCrud";
 import { PLANS, type Plan } from "@/components/admin/plans/plans-data";
 import PlanModal from "@/components/admin/plans/PlanModal";
 
 type Billing = "monthly" | "quarterly";
+
+const EMPTY_PLAN: Plan = {
+  id: "",
+  name: "",
+  tag: null,
+  monthly: 0,
+  quarterly: 0,
+  originalQuarterly: null,
+  status: "Draft",
+  subscribers: 0,
+  highlighted: false,
+  features: [
+    "Provider health review",
+    "Medication (if approved)",
+    "Progress tracking in Brello app",
+  ],
+};
 
 function StatCard({
   label,
@@ -56,11 +76,13 @@ function PlanCard({
   billing,
   index,
   onEdit,
+  onDelete,
 }: {
   plan: Plan;
   billing: Billing;
   index: number;
   onEdit: (plan: Plan) => void;
+  onDelete: (id: string, name: string) => void;
 }) {
   const price = billing === "monthly" ? plan.monthly : plan.quarterly;
   const suffix = billing === "monthly" ? "/mo" : "/3-mo";
@@ -137,33 +159,52 @@ function PlanCard({
           <Users size={14} />
           {plan.subscribers.toLocaleString()} subscribers
         </span>
-        <button
-          onClick={() => onEdit(plan)}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-muted px-3 py-1.5 text-sm font-semibold text-foreground hover:bg-brand hover:text-brand-foreground transition-colors"
-        >
-          <Pencil size={14} />
-          Edit
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => onEdit(plan)}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-muted px-3 py-1.5 text-sm font-semibold text-foreground hover:bg-brand hover:text-brand-foreground transition-colors"
+          >
+            <Pencil size={14} />
+            Edit
+          </button>
+          <button
+            onClick={() => onDelete(plan.id, plan.name)}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-500/10 dark:hover:text-rose-400 transition-colors"
+            aria-label="Delete plan"
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
       </div>
     </motion.div>
   );
 }
 
 export default function PlansView() {
-  const [plans, setPlans] = useState<Plan[]>(PLANS);
+  const { items: plans, error, save, remove } = useAdminCrud<Plan>("plans", PLANS);
   const [billing, setBilling] = useState<Billing>("monthly");
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Plan | null>(null);
+
+  function openAdd() {
+    setEditing(EMPTY_PLAN);
+    setModalOpen(true);
+  }
 
   function openEdit(plan: Plan) {
     setEditing(plan);
     setModalOpen(true);
   }
 
-  function handleSave(saved: Plan) {
-    setPlans((prev) => prev.map((p) => (p.id === saved.id ? saved : p)));
-    setModalOpen(false);
-    setEditing(null);
+  async function handleSave(saved: Plan) {
+    try {
+      const payload = saved.id ? saved : { ...saved, id: `pl-${Date.now()}` };
+      await save(payload);
+      setModalOpen(false);
+      setEditing(null);
+    } catch {
+      /* error shown via banner */
+    }
   }
 
   const stats = useMemo(() => {
@@ -185,25 +226,40 @@ export default function PlansView() {
             Manage subscription plans, pricing, and billing.
           </p>
         </div>
-        <div className="flex rounded-full bg-muted p-1">
+        <div className="flex flex-wrap items-center gap-3">
           <button
-            onClick={() => setBilling("monthly")}
-            className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
-              billing === "monthly" ? "bg-card text-brand shadow-sm" : "text-muted-foreground hover:text-foreground"
-            }`}
+            onClick={openAdd}
+            className="inline-flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-sm font-semibold text-brand-foreground hover:opacity-90 transition-opacity"
           >
-            Monthly
+            <Plus size={16} />
+            Add Plan
           </button>
-          <button
-            onClick={() => setBilling("quarterly")}
-            className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
-              billing === "quarterly" ? "bg-card text-brand shadow-sm" : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            3-Month
-          </button>
+          <div className="flex rounded-full bg-muted p-1">
+            <button
+              onClick={() => setBilling("monthly")}
+              className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
+                billing === "monthly" ? "bg-card text-brand shadow-sm" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Monthly
+            </button>
+            <button
+              onClick={() => setBilling("quarterly")}
+              className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
+                billing === "quarterly" ? "bg-card text-brand shadow-sm" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              3-Month
+            </button>
+          </div>
         </div>
       </div>
+
+      {error && (
+        <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 mb-8">
         <StatCard index={0} label="Total Plans" value={String(stats.total)} icon={Layers} tint="bg-brand/10 text-brand" />
@@ -214,7 +270,7 @@ export default function PlansView() {
 
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {plans.map((p, i) => (
-          <PlanCard key={p.id} plan={p} billing={billing} index={i} onEdit={openEdit} />
+          <PlanCard key={p.id} plan={p} billing={billing} index={i} onEdit={openEdit} onDelete={remove} />
         ))}
       </div>
 

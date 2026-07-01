@@ -10,9 +10,11 @@ import {
   Search,
   Plus,
   Pencil,
+  Trash2,
   Clock,
   type LucideIcon,
 } from "lucide-react";
+import { useAdminCrud } from "@/components/admin/crud/useAdminCrud";
 import {
   BLOG_POSTS,
   CATEGORY_STYLES,
@@ -21,6 +23,7 @@ import {
   type BlogCategory,
   type BlogStatus,
 } from "@/components/admin/blogs/blogs-data";
+import BlogModal from "@/components/admin/blogs/BlogModal";
 
 const CATEGORY_OPTIONS: (BlogCategory | "All")[] = [
   "All",
@@ -65,7 +68,17 @@ function StatCard({
   );
 }
 
-function BlogCard({ post, index }: { post: BlogPost; index: number }) {
+function BlogCard({
+  post,
+  index,
+  onEdit,
+  onDelete,
+}: {
+  post: BlogPost;
+  index: number;
+  onEdit: (post: BlogPost) => void;
+  onDelete: (id: string, title: string) => void;
+}) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -102,30 +115,65 @@ function BlogCard({ post, index }: { post: BlogPost; index: number }) {
           <Eye size={14} />
           {post.views.toLocaleString()} views
         </span>
-        <button className="inline-flex items-center gap-1.5 rounded-lg bg-muted px-3 py-1.5 text-sm font-semibold text-foreground hover:bg-brand hover:text-brand-foreground transition-colors">
-          <Pencil size={14} />
-          Edit
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => onEdit(post)}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-muted px-3 py-1.5 text-sm font-semibold text-foreground hover:bg-brand hover:text-brand-foreground transition-colors"
+          >
+            <Pencil size={14} />
+            Edit
+          </button>
+          <button
+            onClick={() => onDelete(post.id, post.title)}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-500/10 dark:hover:text-rose-400 transition-colors"
+            aria-label="Delete post"
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
       </div>
     </motion.div>
   );
 }
 
 export default function BlogsView() {
+  const { items: posts, error, save, remove } = useAdminCrud<BlogPost>("blogs", BLOG_POSTS);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<(typeof CATEGORY_OPTIONS)[number]>("All");
   const [status, setStatus] = useState<(typeof STATUS_OPTIONS)[number]>("All");
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<BlogPost | null>(null);
+
+  function openAdd() {
+    setEditing(null);
+    setModalOpen(true);
+  }
+
+  function openEdit(post: BlogPost) {
+    setEditing(post);
+    setModalOpen(true);
+  }
+
+  async function handleSave(saved: BlogPost) {
+    try {
+      await save(saved);
+      setModalOpen(false);
+      setEditing(null);
+    } catch {
+      /* error shown via banner */
+    }
+  }
 
   const stats = useMemo(() => {
-    const total = BLOG_POSTS.length;
-    const published = BLOG_POSTS.filter((p) => p.status === "Published").length;
-    const drafts = BLOG_POSTS.filter((p) => p.status === "Draft").length;
-    const views = BLOG_POSTS.reduce((s, p) => s + p.views, 0);
+    const total = posts.length;
+    const published = posts.filter((p) => p.status === "Published").length;
+    const drafts = posts.filter((p) => p.status === "Draft").length;
+    const views = posts.reduce((s, p) => s + p.views, 0);
     return { total, published, drafts, views };
-  }, []);
+  }, [posts]);
 
   const filtered = useMemo(() => {
-    return BLOG_POSTS.filter((p) => {
+    return posts.filter((p) => {
       const q = query.trim().toLowerCase();
       const matchesQuery =
         !q ||
@@ -135,7 +183,7 @@ export default function BlogsView() {
       const matchesStatus = status === "All" || p.status === status;
       return matchesQuery && matchesCategory && matchesStatus;
     });
-  }, [query, category, status]);
+  }, [posts, query, category, status]);
 
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto">
@@ -146,11 +194,20 @@ export default function BlogsView() {
             Create and manage articles for the Brello blog.
           </p>
         </div>
-        <button className="inline-flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-sm font-semibold text-brand-foreground hover:opacity-90 transition-opacity">
+        <button
+          onClick={openAdd}
+          className="inline-flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-sm font-semibold text-brand-foreground hover:opacity-90 transition-opacity"
+        >
           <Plus size={16} />
           New Post
         </button>
       </div>
+
+      {error && (
+        <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 mb-6">
         <StatCard index={0} label="Total Posts" value={String(stats.total)} icon={Newspaper} tint="bg-brand/10 text-brand" />
@@ -196,10 +253,17 @@ export default function BlogsView() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((p, i) => (
-            <BlogCard key={p.id} post={p} index={i} />
+            <BlogCard key={p.id} post={p} index={i} onEdit={openEdit} onDelete={remove} />
           ))}
         </div>
       )}
+
+      <BlogModal
+        open={modalOpen}
+        post={editing}
+        onClose={() => setModalOpen(false)}
+        onSave={handleSave}
+      />
     </div>
   );
 }

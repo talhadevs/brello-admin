@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# admin CRUD local data (seeded from defaults on first run)
+/data/admin/*.json
