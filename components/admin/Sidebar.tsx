@@ -22,7 +22,7 @@ import {
   LogOut,
   type LucideIcon,
 } from "lucide-react";
-import { useUser, logoutUser } from "@/components/admin/user-store";
+import ThemeToggle from "@/components/admin/ThemeToggle";
 
 type NavItem = {
   label: string;
@@ -160,22 +160,7 @@ function LogoutButton() {
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const router = useRouter();
-  const { user, mounted } = useUser();
   let itemIndex = 0;
-
-  function handleLogout() {
-    logoutUser();
-    router.push("/login");
-  }
-
-  const displayName = user?.name ?? "Guest";
-  const initials = displayName
-    .split(" ")
-    .map((p) => p[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
 
   return (
     <motion.aside
