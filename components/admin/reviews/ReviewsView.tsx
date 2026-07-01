@@ -11,9 +11,11 @@ import {
   Check,
   Ban,
   Eye,
+  Trash2,
   AlertTriangle,
   type LucideIcon,
 } from "lucide-react";
+import { useAdminCrud } from "@/components/admin/crud/useAdminCrud";
 import {
   REVIEW_CASES,
   STATUS_STYLES,
@@ -64,7 +66,12 @@ function StatCard({
 }
 
 export default function ReviewsView() {
-  const [cases, setCases] = useState<ReviewCase[]>(REVIEW_CASES);
+  const {
+    items: cases,
+    error,
+    update,
+    remove,
+  } = useAdminCrud<ReviewCase>("providers", REVIEW_CASES);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<(typeof STATUS_OPTIONS)[number]>("All");
   const [selected, setSelected] = useState<ReviewCase | null>(null);
@@ -75,12 +82,18 @@ export default function ReviewsView() {
     setModalOpen(true);
   }
 
-  function decide(id: string, newStatus: ReviewStatus) {
-    setCases((prev) => prev.map((c) => (c.id === id ? { ...c, status: newStatus } : c)));
+  async function decide(id: string, newStatus: ReviewStatus) {
+    const reviewCase = cases.find((c) => c.id === id);
+    if (!reviewCase) return;
+    try {
+      await update({ ...reviewCase, status: newStatus });
+    } catch {
+      /* error shown via banner */
+    }
   }
 
-  function handleModalDecision(id: string, newStatus: ReviewStatus) {
-    decide(id, newStatus);
+  async function handleModalDecision(id: string, newStatus: ReviewStatus) {
+    await decide(id, newStatus);
     setModalOpen(false);
     setSelected(null);
   }
@@ -115,6 +128,12 @@ export default function ReviewsView() {
           Review patient intakes and approve or deny prescriptions.
         </p>
       </div>
+
+      {error && (
+        <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 mb-6">
         <StatCard index={0} label="Pending Reviews" value={String(stats.pending)} icon={ClipboardList} tint="bg-amber-500/10 text-amber-600 dark:text-amber-400" />
@@ -208,6 +227,14 @@ export default function ReviewsView() {
                         title="View details"
                       >
                         <Eye size={16} />
+                      </button>
+                      <button
+                        onClick={() => remove(c.id, c.patient)}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-500/10 dark:hover:text-rose-400 transition-colors"
+                        aria-label="Delete case"
+                        title="Delete case"
+                      >
+                        <Trash2 size={16} />
                       </button>
                     </div>
                   </td>

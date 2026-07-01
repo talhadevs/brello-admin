@@ -15,10 +15,10 @@ import {
   List,
   Pencil,
   Eye,
+  Trash2,
   type LucideIcon,
 } from "lucide-react";
-import StripeBanner from "@/components/admin/stripe/StripeBanner";
-import { useStripeList } from "@/components/admin/stripe/useStripeList";
+import { useAdminCrud } from "@/components/admin/crud/useAdminCrud";
 import {
   PRODUCTS,
   CATEGORY_STYLES,
@@ -75,10 +75,12 @@ function ProductCard({
   product,
   index,
   onEdit,
+  onDelete,
 }: {
   product: Product;
   index: number;
   onEdit: (product: Product) => void;
+  onDelete: (id: string, name: string) => void;
 }) {
   const Icon = CATEGORY_ICON[product.category];
   return (
@@ -136,18 +138,20 @@ function ProductCard({
         <button className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-muted hover:text-brand transition-colors" aria-label="View product">
           <Eye size={16} />
         </button>
+        <button
+          onClick={() => onDelete(product.id, product.name)}
+          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-500/10 dark:hover:text-rose-400 transition-colors"
+          aria-label="Delete product"
+        >
+          <Trash2 size={16} />
+        </button>
       </div>
     </motion.div>
   );
 }
 
 export default function ProductsView() {
-  const {
-    items: products,
-    setItems: setProducts,
-    configured,
-    usingMock,
-  } = useStripeList<Product>("/api/stripe/products", "products", PRODUCTS);
+  const { items: products, error, save, remove } = useAdminCrud<Product>("products", PRODUCTS);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<(typeof CATEGORY_OPTIONS)[number]>("All");
   const [status, setStatus] = useState<(typeof STATUS_OPTIONS)[number]>("All");
@@ -165,15 +169,14 @@ export default function ProductsView() {
     setModalOpen(true);
   }
 
-  function handleSave(saved: Product) {
-    setProducts((prev) => {
-      const exists = prev.some((p) => p.id === saved.id);
-      return exists
-        ? prev.map((p) => (p.id === saved.id ? saved : p))
-        : [saved, ...prev];
-    });
-    setModalOpen(false);
-    setEditing(null);
+  async function handleSave(saved: Product) {
+    try {
+      await save(saved);
+      setModalOpen(false);
+      setEditing(null);
+    } catch {
+      /* error shown via banner */
+    }
   }
 
   const stats = useMemo(() => {
@@ -215,7 +218,11 @@ export default function ProductsView() {
         </button>
       </div>
 
-      <StripeBanner configured={configured} usingMock={usingMock} />
+      {error && (
+        <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 mb-6">
         <StatCard index={0} label="Total Products" value={String(stats.total)} icon={Package} tint="bg-brand/10 text-brand" />
@@ -277,7 +284,7 @@ export default function ProductsView() {
       ) : view === "grid" ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((p, i) => (
-            <ProductCard key={p.id} product={p} index={i} onEdit={openEdit} />
+            <ProductCard key={p.id} product={p} index={i} onEdit={openEdit} onDelete={remove} />
           ))}
         </div>
       ) : (

@@ -14,6 +14,7 @@ import {
   Trash2,
   type LucideIcon,
 } from "lucide-react";
+import { useAdminCrud } from "@/components/admin/crud/useAdminCrud";
 import {
   ADMINS,
   ROLES,
@@ -65,7 +66,13 @@ function StatCard({
 }
 
 export default function AdminsView() {
-  const [admins, setAdmins] = useState<Admin[]>(ADMINS);
+  const {
+    items: admins,
+    error,
+    create,
+    update,
+    remove: removeAdmin,
+  } = useAdminCrud<Admin>("admins", ADMINS);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<(typeof STATUS_OPTIONS)[number]>("All");
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -92,32 +99,45 @@ export default function AdminsView() {
     });
   }, [admins, query, status]);
 
-  function invite(email: string, role: AdminRole) {
+  async function invite(email: string, role: AdminRole) {
     const name = email.split("@")[0].replace(/[._-]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-    setAdmins((prev) => [
-      { id: `a${Date.now()}`, name, email, role, status: "Pending", lastActive: "—" },
-      ...prev,
-    ]);
-    setInviteOpen(false);
-    flash(`Invitation sent to ${email}`);
+    try {
+      await create({
+        id: `a${Date.now()}`,
+        name,
+        email,
+        role,
+        status: "Pending",
+        lastActive: "—",
+      });
+      setInviteOpen(false);
+      flash(`Invitation sent to ${email}`);
+    } catch {
+      /* error shown via banner */
+    }
   }
 
-  function changeRole(id: string, role: AdminRole) {
-    setAdmins((prev) => prev.map((a) => (a.id === id ? { ...a, role } : a)));
+  async function changeRole(id: string, role: AdminRole) {
+    const admin = admins.find((a) => a.id === id);
+    if (!admin) return;
+    try {
+      await update({ ...admin, role });
+    } catch {
+      /* error shown via banner */
+    }
   }
 
-  function toggleSuspend(id: string) {
-    setAdmins((prev) =>
-      prev.map((a) =>
-        a.id === id
-          ? { ...a, status: a.status === "Suspended" ? "Active" : "Suspended" }
-          : a
-      )
-    );
-  }
-
-  function remove(id: string) {
-    setAdmins((prev) => prev.filter((a) => a.id !== id));
+  async function toggleSuspend(id: string) {
+    const admin = admins.find((a) => a.id === id);
+    if (!admin) return;
+    try {
+      await update({
+        ...admin,
+        status: admin.status === "Suspended" ? "Active" : "Suspended",
+      });
+    } catch {
+      /* error shown via banner */
+    }
   }
 
   function resend(email: string) {
@@ -141,6 +161,12 @@ export default function AdminsView() {
           Invite Admin
         </button>
       </div>
+
+      {error && (
+        <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
 
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 mb-6">
         <StatCard index={0} label="Total Admins" value={String(stats.total)} icon={ShieldCheck} tint="bg-brand/10 text-brand" />
@@ -242,7 +268,7 @@ export default function AdminsView() {
                       )}
                       {a.role !== "Owner" && (
                         <button
-                          onClick={() => remove(a.id)}
+                          onClick={() => removeAdmin(a.id, a.name)}
                           className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-500/15 transition-colors"
                           aria-label="Remove"
                           title="Remove"

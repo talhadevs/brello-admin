@@ -8,14 +8,14 @@ import {
   Truck,
   DollarSign,
   Search,
-  Download,
-  Eye,
+  Plus,
+  Pencil,
+  Trash2,
   ChevronLeft,
   ChevronRight,
   type LucideIcon,
 } from "lucide-react";
-import StripeBanner from "@/components/admin/stripe/StripeBanner";
-import { useStripeList } from "@/components/admin/stripe/useStripeList";
+import { useAdminCrud } from "@/components/admin/crud/useAdminCrud";
 import {
   ORDERS,
   MEDICATIONS,
@@ -24,6 +24,7 @@ import {
   type FulfillmentStatus,
   type Order,
 } from "@/components/admin/orders/orders-data";
+import OrderModal from "@/components/admin/orders/OrderModal";
 
 const FULFILLMENT_OPTIONS: (FulfillmentStatus | "All")[] = [
   "All",
@@ -71,15 +72,33 @@ function StatCard({
 }
 
 export default function OrdersView() {
-  const { items: orders, configured, usingMock } = useStripeList<Order>(
-    "/api/stripe/orders",
-    "orders",
-    ORDERS
-  );
+  const { items: orders, error, save, remove } = useAdminCrud<Order>("orders", ORDERS);
   const [query, setQuery] = useState("");
   const [fulfillment, setFulfillment] = useState<(typeof FULFILLMENT_OPTIONS)[number]>("All");
   const [medication, setMedication] = useState<string>("All");
   const [page, setPage] = useState(1);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<Order | null>(null);
+
+  function openAdd() {
+    setEditing(null);
+    setModalOpen(true);
+  }
+
+  function openEdit(order: Order) {
+    setEditing(order);
+    setModalOpen(true);
+  }
+
+  async function handleSave(saved: Order) {
+    try {
+      await save(saved);
+      setModalOpen(false);
+      setEditing(null);
+    } catch {
+      /* error shown via banner */
+    }
+  }
 
   const stats = useMemo(() => {
     const total = orders.length;
@@ -127,13 +146,20 @@ export default function OrdersView() {
             Track and manage customer orders and fulfillment.
           </p>
         </div>
-        <button className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground hover:bg-muted transition-colors">
-          <Download size={16} />
-          Export
+        <button
+          onClick={openAdd}
+          className="inline-flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-sm font-semibold text-brand-foreground hover:opacity-90 transition-opacity"
+        >
+          <Plus size={16} />
+          Add Order
         </button>
       </div>
 
-      <StripeBanner configured={configured} usingMock={usingMock} />
+      {error && (
+        <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 mb-6">
         <StatCard index={0} label="Total Orders" value={String(stats.total)} icon={ShoppingCart} tint="bg-brand/10 text-brand" />
@@ -219,12 +245,22 @@ export default function OrdersView() {
                   </td>
                   <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{o.date}</td>
                   <td className="px-4 py-3 text-right">
-                    <button
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-brand transition-colors"
-                      aria-label="View order"
-                    >
-                      <Eye size={16} />
-                    </button>
+                    <div className="inline-flex items-center gap-1">
+                      <button
+                        onClick={() => openEdit(o)}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-brand transition-colors"
+                        aria-label="Edit order"
+                      >
+                        <Pencil size={15} />
+                      </button>
+                      <button
+                        onClick={() => remove(o.id, o.id)}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-500/10 dark:hover:text-rose-400 transition-colors"
+                        aria-label="Delete order"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -276,6 +312,13 @@ export default function OrdersView() {
           </div>
         </div>
       </div>
+
+      <OrderModal
+        open={modalOpen}
+        order={editing}
+        onClose={() => setModalOpen(false)}
+        onSave={handleSave}
+      />
     </div>
   );
 }

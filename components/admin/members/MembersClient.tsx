@@ -10,23 +10,19 @@ import {
   MessageSquare,
   UserX,
   UserCheck,
+  Pencil,
+  Trash2,
+  UserPlus,
 } from "lucide-react";
+import { useAdminCrud } from "@/components/admin/crud/useAdminCrud";
+import {
+  MEMBERS,
+  type Member,
+  type MemberStatus,
+} from "@/components/admin/members/members-data";
+import MemberModal from "@/components/admin/members/MemberModal";
 
-type Status = "Active" | "New" | "Inactive" | "Suspended";
-
-type Member = {
-  id: string;
-  name: string;
-  email: string;
-  plan: string;
-  status: Status;
-  state: string;
-  joined: string;
-  lastActive: string;
-  progress: string;
-};
-
-const STATUS_STYLES: Record<Status, string> = {
+const STATUS_STYLES: Record<MemberStatus, string> = {
   Active:
     "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300",
   New: "bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300",
@@ -44,19 +40,7 @@ const AVATAR_COLORS = [
   "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300",
 ];
 
-const INITIAL_MEMBERS: Member[] = [
-  { id: "MBR-8041", name: "Norma A.", email: "norma.a@email.com", plan: "Tirzepatide", status: "Active", state: "Texas", joined: "Jun 12, 2025", lastActive: "2 hours ago", progress: "-62 lbs" },
-  { id: "MBR-8040", name: "Jen N.", email: "jen.n@email.com", plan: "GLP-1 + NAD+", status: "Active", state: "Florida", joined: "Mar 03, 2025", lastActive: "Yesterday", progress: "-28 lbs" },
-  { id: "MBR-8039", name: "Gerald G.", email: "gerald.g@email.com", plan: "Semaglutide", status: "Active", state: "Ohio", joined: "Nov 21, 2025", lastActive: "5 days ago", progress: "-108 lbs" },
-  { id: "MBR-8038", name: "Tiffany K.", email: "tiffany.k@email.com", plan: "Sermorelin", status: "Active", state: "Arizona", joined: "Jan 15, 2026", lastActive: "1 hour ago", progress: "-14 lbs" },
-  { id: "MBR-8037", name: "Maria L.", email: "maria.l@email.com", plan: "NAD+", status: "Inactive", state: "Georgia", joined: "Feb 08, 2026", lastActive: "3 weeks ago", progress: "-6 lbs" },
-  { id: "MBR-8036", name: "Ashley R.", email: "ashley.r@email.com", plan: "GLP-1 + NAD+ + Sermorelin", status: "New", state: "Nevada", joined: "Jun 28, 2026", lastActive: "Today", progress: "—" },
-  { id: "MBR-8035", name: "Danielle P.", email: "danielle.p@email.com", plan: "Tirzepatide", status: "Suspended", state: "Colorado", joined: "Aug 19, 2025", lastActive: "2 months ago", progress: "-33 lbs" },
-  { id: "MBR-8034", name: "Karen M.", email: "karen.m@email.com", plan: "Semaglutide", status: "Active", state: "Michigan", joined: "Apr 30, 2025", lastActive: "3 hours ago", progress: "-41 lbs" },
-  { id: "MBR-8033", name: "Brenda S.", email: "brenda.s@email.com", plan: "GLP-1 + Lumen", status: "New", state: "Washington", joined: "Jun 25, 2026", lastActive: "Today", progress: "—" },
-];
-
-const STATUS_FILTERS: (Status | "All")[] = [
+const STATUS_FILTERS: (MemberStatus | "All")[] = [
   "All",
   "Active",
   "New",
@@ -99,13 +83,21 @@ function StatCard({
 }
 
 export default function MembersClient() {
-  const [members, setMembers] = useState(INITIAL_MEMBERS);
-  const [statusFilter, setStatusFilter] = useState<Status | "All">("All");
+  const {
+    items: members,
+    error,
+    save,
+    update,
+    remove,
+  } = useAdminCrud<Member>("members", MEMBERS);
+  const [statusFilter, setStatusFilter] = useState<MemberStatus | "All">("All");
   const [query, setQuery] = useState("");
   const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<Member | null>(null);
 
   const stats = useMemo(() => {
-    const count = (s: Status) => members.filter((x) => x.status === s).length;
+    const count = (s: MemberStatus) => members.filter((x) => x.status === s).length;
     return {
       total: members.length,
       active: count("Active"),
@@ -130,23 +122,63 @@ export default function MembersClient() {
     });
   }, [members, statusFilter, query]);
 
-  function updateStatus(id: string, status: Status) {
-    setMembers((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, status } : m))
-    );
+  function openAdd() {
+    setEditing(null);
+    setModalOpen(true);
+  }
+
+  function openEdit(member: Member) {
+    setEditing(member);
+    setModalOpen(true);
     setOpenMenu(null);
+  }
+
+  async function handleSave(saved: Member) {
+    try {
+      await save(saved);
+      setModalOpen(false);
+      setEditing(null);
+    } catch {
+      /* error shown via banner */
+    }
+  }
+
+  async function updateStatus(id: string, status: MemberStatus) {
+    const member = members.find((m) => m.id === id);
+    if (!member) return;
+    try {
+      await update({ ...member, status });
+      setOpenMenu(null);
+    } catch {
+      /* error shown via banner */
+    }
   }
 
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-3xl font-heading font-bold text-foreground">
-          Members
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          View member profiles, plans, and progress.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-3xl font-heading font-bold text-foreground">
+            Members
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            View member profiles, plans, and progress.
+          </p>
+        </div>
+        <button
+          onClick={openAdd}
+          className="inline-flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-sm font-semibold text-brand-foreground hover:opacity-90 transition-opacity"
+        >
+          <UserPlus size={16} />
+          Add Member
+        </button>
       </div>
+
+      {error && (
+        <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 mb-6">
         <StatCard label="Total Members" value={String(stats.total)} sub="All time" index={0} />
@@ -264,6 +296,7 @@ export default function MembersClient() {
                           />
                           <div className="absolute right-0 z-20 mt-1 w-48 rounded-xl border border-border bg-card p-1 shadow-lg">
                             <MenuButton icon={Eye} label="View profile" onClick={() => setOpenMenu(null)} />
+                            <MenuButton icon={Pencil} label="Edit" onClick={() => openEdit(m)} />
                             <MenuButton icon={Mail} label="Send email" onClick={() => setOpenMenu(null)} />
                             <MenuButton icon={MessageSquare} label="Message" onClick={() => setOpenMenu(null)} />
                             {m.status === "Suspended" ? (
@@ -276,6 +309,15 @@ export default function MembersClient() {
                                 onClick={() => updateStatus(m.id, "Suspended")}
                               />
                             )}
+                            <MenuButton
+                              icon={Trash2}
+                              label="Delete"
+                              destructive
+                              onClick={() => {
+                                remove(m.id, m.name);
+                                setOpenMenu(null);
+                              }}
+                            />
                           </div>
                         </>
                       )}
@@ -297,6 +339,13 @@ export default function MembersClient() {
           </table>
         </div>
       </motion.div>
+
+      <MemberModal
+        open={modalOpen}
+        member={editing}
+        onClose={() => setModalOpen(false)}
+        onSave={handleSave}
+      />
     </div>
   );
 }

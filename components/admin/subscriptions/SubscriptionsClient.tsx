@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Search,
@@ -11,14 +11,16 @@ import {
   RefreshCw,
   CreditCard,
   Eye,
+  Trash2,
 } from "lucide-react";
-import StripeBanner from "@/components/admin/stripe/StripeBanner";
-import type { AdminSubscription } from "@/lib/stripe/mappers";
+import { useAdminCrud } from "@/components/admin/crud/useAdminCrud";
+import {
+  SUBSCRIPTIONS,
+  type Subscription,
+  type SubscriptionStatus,
+} from "@/components/admin/subscriptions/subscriptions-data";
 
-type Status = AdminSubscription["status"];
-type Subscription = AdminSubscription;
-
-const STATUS_STYLES: Record<Status, string> = {
+const STATUS_STYLES: Record<SubscriptionStatus, string> = {
   Active:
     "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300",
   Paused:
@@ -31,19 +33,7 @@ const STATUS_STYLES: Record<Status, string> = {
     "bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300",
 };
 
-const INITIAL_SUBSCRIPTIONS: Subscription[] = [
-  { id: "SUB-10241", member: "Norma A.", email: "norma.a@email.com", plan: "Tirzepatide", dosage: "5mg / week", status: "Active", amount: "$499", cycle: "Every 10 weeks", nextBilling: "Jul 18, 2026", state: "Texas" },
-  { id: "SUB-10240", member: "Jen N.", email: "jen.n@email.com", plan: "GLP-1 + NAD+", dosage: "Bundle", status: "Active", amount: "$199", cycle: "Every 10 weeks", nextBilling: "Jul 21, 2026", state: "Florida" },
-  { id: "SUB-10239", member: "Gerald G.", email: "gerald.g@email.com", plan: "Semaglutide", dosage: "0.5mg / week", status: "Past Due", amount: "$399", cycle: "Every 10 weeks", nextBilling: "Jun 30, 2026", state: "Ohio" },
-  { id: "SUB-10238", member: "Tiffany K.", email: "tiffany.k@email.com", plan: "Sermorelin", dosage: "0.3mg / day", status: "Active", amount: "$499", cycle: "Every 10 weeks", nextBilling: "Aug 02, 2026", state: "Arizona" },
-  { id: "SUB-10237", member: "Maria L.", email: "maria.l@email.com", plan: "NAD+", dosage: "100mg / week", status: "Paused", amount: "$79", cycle: "Every 10 weeks", nextBilling: "—", state: "Georgia" },
-  { id: "SUB-10236", member: "Ashley R.", email: "ashley.r@email.com", plan: "GLP-1 + NAD+ + Sermorelin", dosage: "Bundle", status: "Pending Approval", amount: "$299", cycle: "Every 10 weeks", nextBilling: "—", state: "Nevada" },
-  { id: "SUB-10235", member: "Danielle P.", email: "danielle.p@email.com", plan: "Tirzepatide", dosage: "7.5mg / week", status: "Cancelled", amount: "$499", cycle: "Every 10 weeks", nextBilling: "—", state: "Colorado" },
-  { id: "SUB-10234", member: "Karen M.", email: "karen.m@email.com", plan: "Semaglutide", dosage: "1mg / week", status: "Active", amount: "$399", cycle: "Every 10 weeks", nextBilling: "Jul 25, 2026", state: "Michigan" },
-  { id: "SUB-10233", member: "Brenda S.", email: "brenda.s@email.com", plan: "GLP-1 + Lumen", dosage: "Bundle", status: "Active", amount: "$166", cycle: "Every 10 weeks", nextBilling: "Aug 10, 2026", state: "Washington" },
-];
-
-const STATUS_FILTERS: (Status | "All")[] = [
+const STATUS_FILTERS: (SubscriptionStatus | "All")[] = [
   "All",
   "Active",
   "Paused",
@@ -78,65 +68,18 @@ function StatCard({
 }
 
 export default function SubscriptionsClient() {
-  const [subscriptions, setSubscriptions] = useState<Subscription[]>(INITIAL_SUBSCRIPTIONS);
-  const [configured, setConfigured] = useState(false);
-  const [usingMock, setUsingMock] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<Status | "All">("All");
+  const {
+    items: subscriptions,
+    error,
+    update,
+    remove,
+  } = useAdminCrud<Subscription>("subscriptions", SUBSCRIPTIONS);
+  const [statusFilter, setStatusFilter] = useState<SubscriptionStatus | "All">("All");
   const [query, setQuery] = useState("");
   const [openMenu, setOpenMenu] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      try {
-        const res = await fetch("/api/stripe/subscriptions");
-        const data = await res.json();
-        if (cancelled) return;
-
-        if (res.ok && data.source === "stripe" && Array.isArray(data.subscriptions)) {
-          setSubscriptions(data.subscriptions);
-          setConfigured(true);
-          setUsingMock(false);
-        } else {
-          setConfigured(Boolean(data.configured));
-          setUsingMock(true);
-        }
-      } catch {
-        if (!cancelled) setUsingMock(true);
-      }
-    }
-
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  async function runStripeAction(id: string, action: "cancel" | "pause" | "resume") {
-    if (usingMock) {
-      if (action === "cancel") updateStatus(id, "Cancelled");
-      if (action === "pause") updateStatus(id, "Paused");
-      if (action === "resume") updateStatus(id, "Active");
-      return;
-    }
-
-    const res = await fetch("/api/stripe/subscriptions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, action }),
-    });
-    const data = await res.json();
-    if (res.ok && data.subscription) {
-      setSubscriptions((prev) =>
-        prev.map((s) => (s.id === id ? data.subscription : s))
-      );
-    }
-    setOpenMenu(null);
-  }
-
   const stats = useMemo(() => {
-    const count = (s: Status) =>
+    const count = (s: SubscriptionStatus) =>
       subscriptions.filter((x) => x.status === s).length;
     return {
       active: count("Active"),
@@ -161,11 +104,15 @@ export default function SubscriptionsClient() {
     });
   }, [subscriptions, statusFilter, query]);
 
-  function updateStatus(id: string, status: Status) {
-    setSubscriptions((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, status } : s))
-    );
-    setOpenMenu(null);
+  async function updateStatus(id: string, status: SubscriptionStatus) {
+    const sub = subscriptions.find((s) => s.id === id);
+    if (!sub) return;
+    try {
+      await update({ ...sub, status });
+      setOpenMenu(null);
+    } catch {
+      /* error shown via banner */
+    }
   }
 
   return (
@@ -179,7 +126,11 @@ export default function SubscriptionsClient() {
         </p>
       </div>
 
-      <StripeBanner configured={configured} usingMock={usingMock} />
+      {error && (
+        <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 mb-6">
         <StatCard label="Active" value={String(stats.active)} sub="Currently billing" index={0} />
@@ -293,13 +244,13 @@ export default function SubscriptionsClient() {
                           <div className="absolute right-0 z-20 mt-1 w-48 rounded-xl border border-border bg-card p-1 shadow-lg">
                             <MenuButton icon={Eye} label="View member" onClick={() => setOpenMenu(null)} />
                             {s.status !== "Active" && s.status !== "Cancelled" && (
-                              <MenuButton icon={Play} label="Resume" onClick={() => runStripeAction(s.id, "resume")} />
+                              <MenuButton icon={Play} label="Resume" onClick={() => updateStatus(s.id, "Active")} />
                             )}
                             {s.status === "Active" && (
-                              <MenuButton icon={Pause} label="Pause" onClick={() => runStripeAction(s.id, "pause")} />
+                              <MenuButton icon={Pause} label="Pause" onClick={() => updateStatus(s.id, "Paused")} />
                             )}
                             {s.status === "Past Due" && (
-                              <MenuButton icon={CreditCard} label="Retry payment" onClick={() => runStripeAction(s.id, "resume")} />
+                              <MenuButton icon={CreditCard} label="Retry payment" onClick={() => updateStatus(s.id, "Active")} />
                             )}
                             {s.status === "Pending Approval" && (
                               <MenuButton icon={RefreshCw} label="Approve & activate" onClick={() => updateStatus(s.id, "Active")} />
@@ -309,9 +260,18 @@ export default function SubscriptionsClient() {
                                 icon={XCircle}
                                 label="Cancel"
                                 destructive
-                                onClick={() => runStripeAction(s.id, "cancel")}
+                                onClick={() => updateStatus(s.id, "Cancelled")}
                               />
                             )}
+                            <MenuButton
+                              icon={Trash2}
+                              label="Delete"
+                              destructive
+                              onClick={() => {
+                                remove(s.id, s.id);
+                                setOpenMenu(null);
+                              }}
+                            />
                           </div>
                         </>
                       )}
