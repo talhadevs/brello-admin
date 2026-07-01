@@ -133,8 +133,15 @@ export default function LoginPage() {
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-md px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
-              style={{ background: colors.inputBg, color: colors.inputText }}
+              className="login-input w-full rounded-md px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
+              style={
+                {
+                  background: colors.inputBg,
+                  color: colors.inputText,
+                  "--autofill-bg": colors.inputBg,
+                  "--autofill-text": colors.inputText,
+                } as React.CSSProperties
+              }
             />
           </div>
 
@@ -154,8 +161,15 @@ export default function LoginPage() {
                 autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-md px-3 py-2.5 pr-10 text-sm outline-none focus:ring-2 focus:ring-ring"
-                style={{ background: colors.inputBg, color: colors.inputText }}
+                className="login-input w-full rounded-md px-3 py-2.5 pr-10 text-sm outline-none focus:ring-2 focus:ring-ring"
+                style={
+                  {
+                    background: colors.inputBg,
+                    color: colors.inputText,
+                    "--autofill-bg": colors.inputBg,
+                    "--autofill-text": colors.inputText,
+                  } as React.CSSProperties
+                }
               />
               <button
                 type="button"
